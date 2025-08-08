@@ -1,85 +1,77 @@
 #!/bin/bash
 
-show_progress() {
-  local message="$1"
-  local duration="$2"
-  local steps=100
-  local sleep_time=$(awk "BEGIN {print $duration/$steps}")
+# banwhats.sh - Painel BanWhats com simulação de banimento
+# Autor: Alissonkkj (adaptado pelo ChatGPT)
+# Versão: 1.6
 
-  {
-    for ((i=1; i<=steps; i++)); do
-      echo $i
-      echo "XXX"
-      echo "$message ($i%)"
-      echo "XXX"
-      sleep $sleep_time
-    done
-  } | dialog --title "Progresso" --gauge "" 7 70 0
+show_logo() {
+  clear
+  cat << "EOF"
+ ____    _    _   _ _    _    _   _ _____ 
+| __ )  / \  | \ | | |  | |  | | | | ____|
+|  _ \ / _ \ |  \| | |  | |  | | | |  _|  
+| |_) / ___ \| |\  | |__| |__| |_| | |___ 
+|____/_/   \_\_| \_|____|_____\___/|_____|
+
+                by alisonkkjj yt
+EOF
+  echo
 }
 
-validate_number() {
-  [[ "$1" =~ ^[0-9]{8,}$ ]]
-}
-
-validate_instagram() {
-  [[ "$1" =~ ^[a-zA-Z0-9._]{3,30}$ ]]
-}
-
-main_menu() {
+input_numero() {
   while true; do
-    OPTION=$(dialog --clear --title "🔰 Painel BanWhats - Alissonkkj 🔰" --colors \
-      --menu "\Z1Escolha uma opção:\Z0" 15 55 5 \
-      1 "\Z2Banir número WhatsApp\Z0" \
-      2 "\Z3Desativar número WhatsApp\Z0" \
-      3 "\Z4Banir Instagram\Z0" \
-      4 "📦 Sobre" \
-      5 "🚪 Sair" \
-      3>&1 1>&2 2>&3)
-    clear
-
-    case $OPTION in
-      1)
-        PHONE=$(dialog --inputbox "Digite o número do WhatsApp para banir (mín 8 dígitos):" 8 55 3>&1 1>&2 2>&3)
-        clear
-        if ! validate_number "$PHONE"; then
-          dialog --msgbox "Número inválido! Use pelo menos 8 dígitos numéricos." 7 50
-        else
-          show_progress "Banindo número $PHONE..." 8
-          dialog --msgbox "✅ Número $PHONE banido com sucesso!" 7 50
-        fi
-        ;;
-      2)
-        PHONE=$(dialog --inputbox "Digite o número do WhatsApp para desativar (mín 8 dígitos):" 8 55 3>&1 1>&2 2>&3)
-        clear
-        if ! validate_number "$PHONE"; then
-          dialog --msgbox "Número inválido! Use pelo menos 8 dígitos numéricos." 7 50
-        else
-          show_progress "Desativando número $PHONE..." 8
-          dialog --msgbox "✅ Número $PHONE desativado com sucesso!" 7 50
-        fi
-        ;;
-      3)
-        INSTA=$(dialog --inputbox "Digite o usuário do Instagram para banir (3-30 caracteres):" 8 60 3>&1 1>&2 2>&3)
-        clear
-        if ! validate_instagram "$INSTA"; then
-          dialog --msgbox "Usuário inválido! Use letras, números, _ ou . (3-30 chars)." 7 55
-        else
-          show_progress "Banindo Instagram @$INSTA..." 8
-          dialog --msgbox "✅ Instagram @$INSTA banido com sucesso!" 7 50
-        fi
-        ;;
-      4)
-        dialog --msgbox "Painel BanWhats\nDesenvolvido por Alissonkkj\nVersão 1.0\n\nTermux + dialog necessários." 10 55
-        ;;
-      5)
-        clear
-        exit 0
-        ;;
-      *)
-        dialog --msgbox "Opção inválida! Tente novamente." 6 40
-        ;;
-    esac
+    numero=$(dialog --stdout --inputbox "Digite o número (somente números, ex: 5511999998888):" 8 50)
+    if [[ "$numero" =~ ^[0-9]{10,15}$ ]]; then
+      break
+    else
+      dialog --msgbox "Número inválido. Tente novamente." 6 40
+    fi
   done
 }
 
-main_menu
+input_usuario() {
+  while true; do
+    usuario=$(dialog --stdout --inputbox "Digite o usuário do Instagram (ex: usuario123):" 8 50)
+    if [[ -n "$usuario" && ! "$usuario" =~ [[:space:]] ]]; then
+      break
+    else
+      dialog --msgbox "Usuário inválido. Não pode estar vazio ou conter espaços." 6 50
+    fi
+  done
+}
+
+barra_progresso() {
+  {
+    for ((i=0; i<=100; i++)); do
+      echo $i
+      sleep 1.5  # 1.5s * 100 = 150 segundos
+    done
+  } | dialog --gauge "Processando..." 10 60 0
+}
+
+ban_whatsapp() {
+  input_numero
+  barra_progresso
+  dialog --msgbox "Número $numero banido no WhatsApp com sucesso!" 6 50
+}
+
+ban_instagram() {
+  input_usuario
+  barra_progresso
+  dialog --msgbox "Usuário $usuario banido no Instagram com sucesso!" 6 50
+}
+
+while true; do
+  show_logo
+  opcao=$(dialog --stdout --menu "Painel BanWhats - Escolha uma opção:" 15 50 6 \
+    1 "Ban WhatsApp" \
+    2 "Ban Instagram" \
+    3 "Sair")
+
+  case $opcao in
+    1) ban_whatsapp ;;
+    2) ban_instagram ;;
+    3) clear; exit 0 ;;
+    *) dialog --msgbox "Opção inválida!" 5 30 ;;
+  esac
+done
